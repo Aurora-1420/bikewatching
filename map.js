@@ -1,3 +1,4 @@
+import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
 import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 
 console.log('Mapbox GL JS Loaded:', mapboxgl);
@@ -17,7 +18,7 @@ const map = new mapboxgl.Map({
 
 map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-map.on('load', () => {
+map.on('load', async () => {
   const bikeLaneStyle = {
     'line-color': '#32D400',
     'line-width': 3,
@@ -47,4 +48,57 @@ map.on('load', () => {
     source: 'cambridge-bike-lanes',
     paint: bikeLaneStyle,
   });
+
+  const svg = d3.select('#map').select('svg');
+
+  try {
+    const stationDataUrl =
+      'https://dsc106.com/labs/lab07/data/bluebikes-stations.json';
+    const jsonData = await d3.json(stationDataUrl);
+    const stations = jsonData?.data?.stations;
+
+    if (!Array.isArray(stations)) {
+      throw new Error('Station data is missing the expected data.stations array.');
+    }
+
+    const validStations = stations.filter(
+      (station) =>
+        Number.isFinite(Number(station.lon)) &&
+        Number.isFinite(Number(station.lat))
+    );
+
+    if (validStations.length !== stations.length) {
+      console.warn(
+        `Skipped ${stations.length - validStations.length} stations with invalid coordinates.`
+      );
+    }
+
+    const circles = svg
+      .selectAll('circle')
+      .data(validStations)
+      .join('circle')
+      .attr('r', 5)
+      .attr('fill', 'steelblue')
+      .attr('stroke', 'white')
+      .attr('stroke-width', 1)
+      .attr('opacity', 0.8);
+
+    function updatePositions() {
+      circles
+        .attr('cx', (station) => getCoords(station).cx)
+        .attr('cy', (station) => getCoords(station).cy);
+    }
+
+    updatePositions();
+    map.on('move', updatePositions);
+    map.on('resize', updatePositions);
+  } catch (error) {
+    console.error('Error loading Bluebikes station data:', error);
+  }
 });
+
+function getCoords(station) {
+  const point = new mapboxgl.LngLat(Number(station.lon), Number(station.lat));
+  const { x, y } = map.project(point);
+  return { cx: x, cy: y };
+}
