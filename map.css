@@ -14,12 +14,41 @@ body {
 }
 
 .map-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1em;
   padding: 0.75rem 1rem;
 }
 
 .map-header h1,
 .map-header p {
   margin: 0;
+}
+
+.time-filter {
+  display: grid;
+  grid-template-columns: auto minmax(10rem, 18rem);
+  align-items: center;
+  column-gap: 0.75rem;
+  margin-left: auto;
+}
+
+.time-filter input {
+  width: 100%;
+}
+
+.time-display {
+  grid-column: 2;
+  min-height: 1.5em;
+}
+
+.time-display time,
+.time-display em {
+  display: block;
+}
+
+.time-display em {
+  color: #666;
 }
 
 #map {
@@ -43,4 +72,16 @@ body {
   stroke: white;
   stroke-width: 1px;
   pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  .map-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .time-filter {
+    grid-template-columns: auto minmax(0, 1fr);
+    margin-left: 0;
+  }
 }

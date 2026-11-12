@@ -15,8 +15,18 @@
   </head>
   <body>
     <header class="map-header">
-      <h1>🚴 Bikewatching</h1>
-      <p>An interactive map exploring bike traffic around Boston.</p>
+      <div>
+        <h1>🚴 Bikewatching</h1>
+        <p>An interactive map exploring bike traffic around Boston.</p>
+      </div>
+      <label class="time-filter" for="time-slider">
+        <span>Filter by time:</span>
+        <input id="time-slider" type="range" min="-1" max="1440" value="-1" />
+        <span class="time-display">
+          <time id="selected-time"></time>
+          <em id="any-time">(any time)</em>
+        </span>
+      </label>
     </header>
     <div id="map" aria-label="Map of the Boston and Cambridge area">
       <svg aria-hidden="true"></svg>
