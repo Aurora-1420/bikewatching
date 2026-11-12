@@ -52,36 +52,71 @@ map.on('load', async () => {
   const svg = d3.select('#map').select('svg');
 
   try {
-    const stationDataUrl =
-      'https://dsc106.com/labs/lab07/data/bluebikes-stations.json';
-    const jsonData = await d3.json(stationDataUrl);
-    const stations = jsonData?.data?.stations;
+    const [jsonData, trips] = await Promise.all([
+      d3.json('https://dsc106.com/labs/lab07/data/bluebikes-stations.json'),
+      d3.csv(
+        'https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv'
+      ),
+    ]);
+    const rawStations = jsonData?.data?.stations;
 
-    if (!Array.isArray(stations)) {
+    if (!Array.isArray(rawStations)) {
       throw new Error('Station data is missing the expected data.stations array.');
     }
 
-    const validStations = stations.filter(
+    const validStations = rawStations.filter(
       (station) =>
         Number.isFinite(Number(station.lon)) &&
         Number.isFinite(Number(station.lat))
     );
 
-    if (validStations.length !== stations.length) {
+    if (validStations.length !== rawStations.length) {
       console.warn(
-        `Skipped ${stations.length - validStations.length} stations with invalid coordinates.`
+        `Skipped ${rawStations.length - validStations.length} stations with invalid coordinates.`
       );
     }
 
+    const departures = d3.rollup(
+      trips,
+      (records) => records.length,
+      (trip) => trip.start_station_id
+    );
+    const arrivals = d3.rollup(
+      trips,
+      (records) => records.length,
+      (trip) => trip.end_station_id
+    );
+    const stations = validStations.map((station) => {
+      const id = station.short_name;
+      const stationArrivals = arrivals.get(id) ?? 0;
+      const stationDepartures = departures.get(id) ?? 0;
+
+      return {
+        ...station,
+        arrivals: stationArrivals,
+        departures: stationDepartures,
+        totalTraffic: stationArrivals + stationDepartures,
+      };
+    });
+    const maxTraffic = d3.max(stations, (station) => station.totalTraffic) ?? 0;
+    const radiusScale = d3
+      .scaleSqrt()
+      .domain([0, maxTraffic || 1])
+      .range([0, 25]);
+
     const circles = svg
       .selectAll('circle')
-      .data(validStations)
+      .data(stations)
       .join('circle')
-      .attr('r', 5)
+      .attr('r', (station) => radiusScale(station.totalTraffic))
       .attr('fill', 'steelblue')
-      .attr('stroke', 'white')
-      .attr('stroke-width', 1)
-      .attr('opacity', 0.8);
+      .each(function (station) {
+        d3.select(this)
+          .append('title')
+          .text(
+            `${station.totalTraffic} trips (${station.departures} departures, ${station.arrivals} arrivals)`
+          );
+      });
 
     function updatePositions() {
       circles
