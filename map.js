@@ -19,6 +19,7 @@ const map = new mapboxgl.Map({
 let timeFilter = -1;
 let departuresByMinute = Array.from({ length: 1440 }, () => []);
 let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
+const stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 const timeSlider = document.getElementById('time-slider');
 const selectedTime = document.getElementById('selected-time');
 const anyTimeLabel = document.getElementById('any-time');
@@ -128,7 +129,13 @@ map.on('load', async () => {
       .selectAll('circle')
       .data(stations, (station) => station.short_name)
       .join('circle')
-      .attr('fill', 'steelblue');
+      .style('--departure-ratio', (station) =>
+        stationFlow(
+          station.totalTraffic === 0
+            ? 0.5
+            : station.departures / station.totalTraffic
+        )
+      );
 
     updateScatterPlot = (selectedMinutes) => {
       const filteredStations = computeStationTraffic(
@@ -142,7 +149,13 @@ map.on('load', async () => {
       circles = circles
         .data(filteredStations, (station) => station.short_name)
         .join('circle')
-        .attr('fill', 'steelblue')
+        .style('--departure-ratio', (station) =>
+          stationFlow(
+            station.totalTraffic === 0
+              ? 0.5
+              : station.departures / station.totalTraffic
+          )
+        )
         .attr('r', (station) => radiusScale(station.totalTraffic))
         .each(function (station) {
           d3.select(this)

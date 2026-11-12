@@ -51,6 +51,17 @@ body {
   color: #666;
 }
 
+#map svg circle,
+.legend > div {
+  --color-departures: steelblue;
+  --color-arrivals: darkorange;
+  --color: color-mix(
+    in oklch,
+    var(--color-departures) calc(100% * var(--departure-ratio)),
+    var(--color-arrivals)
+  );
+}
+
 #map {
   position: relative;
   flex: 1;
@@ -68,10 +79,33 @@ body {
 }
 
 #map svg circle {
+  fill: var(--color);
   fill-opacity: 0.6;
   stroke: white;
   stroke-width: 1px;
   pointer-events: auto;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 1rem;
+}
+
+.legend > div {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend > div::before {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid #777;
+  border-radius: 50%;
+  background: var(--color);
+  content: "";
 }
 
 @media (max-width: 640px) {
@@ -83,5 +117,10 @@ body {
   .time-filter {
     grid-template-columns: auto minmax(0, 1fr);
     margin-left: 0;
+  }
+
+  .legend {
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
   }
 }
