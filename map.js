@@ -85,6 +85,38 @@ map.on('load', async () => {
   });
 
   const svg = d3.select('#map').select('svg');
+  const stationTooltip = d3.select('#station-tooltip');
+
+  if (stationTooltip.empty()) {
+    throw new Error('Station tooltip element is missing from the page.');
+  }
+
+  function showStationTooltip(event, station) {
+    const tooltip = stationTooltip
+      .text(
+        `${station.totalTraffic} trips (${station.departures} departures, ${station.arrivals} arrivals)`
+      )
+      .style('display', 'block')
+      .attr('aria-hidden', 'false');
+    const tooltipElement = tooltip.node();
+    const mapBounds = map.getContainer().getBoundingClientRect();
+    const left = Math.min(
+      event.clientX - mapBounds.left + 12,
+      mapBounds.width - tooltipElement.offsetWidth - 8
+    );
+    const top = Math.min(
+      event.clientY - mapBounds.top + 12,
+      mapBounds.height - tooltipElement.offsetHeight - 8
+    );
+
+    tooltip
+      .style('left', `${Math.max(8, left)}px`)
+      .style('top', `${Math.max(8, top)}px`);
+  }
+
+  function hideStationTooltip() {
+    stationTooltip.style('display', 'none').attr('aria-hidden', 'true');
+  }
 
   try {
     const [jsonData] = await Promise.all([
@@ -157,6 +189,8 @@ map.on('load', async () => {
           )
         )
         .attr('r', (station) => radiusScale(station.totalTraffic))
+        .on('pointerenter pointermove', showStationTooltip)
+        .on('pointerleave', hideStationTooltip)
         .each(function (station) {
           d3.select(this)
             .selectAll('title')
